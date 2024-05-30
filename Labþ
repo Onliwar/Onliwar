@@ -1,27 +1,48 @@
-import unittest
+
+import httpx
+
+class BaseDataLoader:
+    async def load_data(self, url):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            return response.json()
+
+import requests
+
+class CoinBaseLoader:
+    def load_data(self, currency):
+        url = f"https://api.coinbase.com/v2/prices/{currency}-USD/spot"
+        response = requests.get(url)
+        return response.json()
+
+    async def get_data_history(self, currency, start_date, end_date):
+        async with httpx.AsyncClient() as client:
+            tasks = []
+            for _ in range(10):
+                url = f"https://api.coinbase.com/v2/prices/{currency}-USD/spot/history?start={start_date}&end={end_date}"
+                tasks.append(client.get(url))
+            responses = await asyncio.gather(*tasks)
+            return [response.json() for response in responses]
+
+import time
+import asyncio
+from basedataloader import BaseDataLoader
 from coinbaseloader import CoinBaseLoader
 
-class TestCoinBaseLoader(unittest.TestCase):
-    def setUp(self):
-        self.loader = CoinBaseLoader()
+async def async_main():
+    start_time = time.time()
+    base_loader = BaseDataLoader()
+    await base_loader.load_data("https://api.coindesk.com/v1/bpi/currentprice.json")
+    end_time = time.time()
+    print(f"Час виконання асинхронного запиту: {end_time - start_time} секунд")
 
-    def test_load_data(self):
-        data = self.loader.load_data('BTC')
-        self.assertIsNotNone(data)
-        self.assertIn('price', data)
-        self.assertIn('volume_24h', data)
-    
-    def test_error_handling(self):
-        with self.assertRaises(ValueError):
-            self.loader.load_data('INVALID')
-    
-    @unittest.skip("Потрібно активне з'єднання з мережею")
-    @unittest.expectedFailure
-    def test_parameterized_load(self, currency):
-        data = self.loader.load_data(currency)
-        self.assertIsNotNone(data)
-        self.assertIn('price', data)
-        self.assertIn('volume_24h', data)
+def sync_main():
+    start_time = time.time()
+    coin_loader = CoinBaseLoader()
+    coin_loader.load_data("BTC")
+    end_time = time.time()
+    print(f"Час виконання синхронного запиту: {end_time - start_time} секунд")
 
-if __name__ == '__main__':
-    unittest.main()
+if __name__ == "__main__":
+    asyncio.run(async_main())
+    sync_main()
