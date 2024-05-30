@@ -1,48 +1,95 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Dict
 
-import httpx
+app = FastAPI()
 
-class BaseDataLoader:
-    async def load_data(self, url):
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            return response.json()
 
-import requests
+db = {
+    1: {"id": 1, "title": "Пост 1", "content": "Це перший пост"},
+    2: {"id": 2, "title": "Пост 2", "content": "Це другий пост"}
+}
 
-class CoinBaseLoader:
-    def load_data(self, currency):
-        url = f"https://api.coinbase.com/v2/prices/{currency}-USD/spot"
-        response = requests.get(url)
-        return response.json()
 
-    async def get_data_history(self, currency, start_date, end_date):
-        async with httpx.AsyncClient() as client:
-            tasks = []
-            for _ in range(10):
-                url = f"https://api.coinbase.com/v2/prices/{currency}-USD/spot/history?start={start_date}&end={end_date}"
-                tasks.append(client.get(url))
-            responses = await asyncio.gather(*tasks)
-            return [response.json() for response in responses]
+class Post(BaseModel):
+    title: str
+    content: str
 
-import time
-import asyncio
-from basedataloader import BaseDataLoader
-from coinbaseloader import CoinBaseLoader
 
-async def async_main():
-    start_time = time.time()
-    base_loader = BaseDataLoader()
-    await base_loader.load_data("https://api.coindesk.com/v1/bpi/currentprice.json")
-    end_time = time.time()
-    print(f"Час виконання асинхронного запиту: {end_time - start_time} секунд")
+@app.get("/version")
+async def version():
+    return {"version": "1.0"}
 
-def sync_main():
-    start_time = time.time()
-    coin_loader = CoinBaseLoader()
-    coin_loader.load_data("BTC")
-    end_time = time.time()
-    print(f"Час виконання синхронного запиту: {end_time - start_time} секунд")
+@app.get("/posts")
+async def get_posts():
+    return list(db.values())
+
+@app.post("/posts")
+async def create_post(post: Post):
+    new_id = max(db.keys()) + 1
+    db[new_id] = post.dict()
+    return db[new_id]
+
+@app.put("/posts/{post_id}")
+async def update_post(post_id: int, post: Post):
+    if post_id not in db:
+        raise HTTPException(status_code=404, detail="Пост не знайдено")
+    db[post_id] = post.dict()
+    return db[post_id]
+
+@app.delete("/posts/{post_id}")
+async def delete_post(post_id: int):
+    if post_id not in db:
+        raise HTTPException(status_code=404, detail="Пост не знайдено")
+    del db[post_id]
+    return {"message": "Пост видалено успішно"}
+
+@app.get("/stats")
+async def stats():
+    stats_data = {}
+    for route in app.routes:
+        route_path = route.path
+        if route_path != "/stats":
+            stats_data[route_path] = {}
+            for method in route.methods:
+                stats_data[route_path][method] = db.count(route_path, method)
+    return stats_data
+
+
+def test_version_endpoint():
+    response = app.client.get("/version")
+    assert response.status_code == 200
+    assert response.json() == {"version": "1.0"}
+
+def test_get_posts_endpoint():
+    response = app.client.get("/posts")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+def test_create_post_endpoint():
+    new_post = {"title": "Новий пост", "content": "Це новий пост"}
+    response = app.client.post("/posts", json=new_post)
+    assert response.status_code == 200
+    assert response.json()["title"] == new_post["title"]
+    assert response.json()["content"] == new_post["content"]
+
+def test_update_post_endpoint():
+    updated_post = {"title": "Оновлений пост", "content": "Це оновлений пост"}
+    response = app.client.put("/posts/1", json=updated_post)
+    assert response.status_code == 200
+    assert response.json()["title"] == updated_post["title"]
+    assert response.json()["content"] == updated_post["content"]
+
+def test_delete_post_endpoint():
+    response = app.client.delete("/posts/2")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Пост видалено успішно"}
+
+def test_stats_endpoint():
+    response = app.client.get("/stats")
+    assert response.status_code == 200
+    assert isinstance(response.json(), dict)
 
 if __name__ == "__main__":
-    asyncio.run(async_main())
-    sync_main()
+    import pytest
+    pytest.main()
