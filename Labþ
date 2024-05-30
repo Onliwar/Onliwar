@@ -1,0 +1,20 @@
+import requests
+
+def get_current_weather(city_name):
+    api_key = 'your_api_key_here' 
+    url = f'http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={api_key}&units=metric'
+    response = requests.get(url)
+    data = response.json()
+    if response.status_code == 200:
+        weather_description = data['weather'][0]['description']
+        temperature = data['main']['temp']
+        humidity = data['main']['humidity']
+        wind_speed = data['wind']['speed']
+        print(f'Погода в місті {city_name}:')
+        print(f'Опис погоди: {weather_description}')
+        print(f'Температура: {temperature}°C')
+        print(f'Вологість: {humidity}%')
+        print(f'Швидкість вітру: {wind_speed} м/с')
+    else:
+        print('Помилка при виконанні запиту.')
+get_current_weather('New York')
