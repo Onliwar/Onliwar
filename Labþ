@@ -1,20 +1,35 @@
-import requests
+import logging
 
-def get_current_weather(city_name):
-    api_key = 'your_api_key_here' 
-    url = f'http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={api_key}&units=metric'
-    response = requests.get(url)
-    data = response.json()
-    if response.status_code == 200:
-        weather_description = data['weather'][0]['description']
-        temperature = data['main']['temp']
-        humidity = data['main']['humidity']
-        wind_speed = data['wind']['speed']
-        print(f'Погода в місті {city_name}:')
-        print(f'Опис погоди: {weather_description}')
-        print(f'Температура: {temperature}°C')
-        print(f'Вологість: {humidity}%')
-        print(f'Швидкість вітру: {wind_speed} м/с')
-    else:
-        print('Помилка при виконанні запиту.')
-get_current_weather('New York')
+
+logging.basicConfig(level=logging.INFO)
+
+
+logger = logging.getLogger('baseloader')
+
+
+coin_logger = logging.getLogger('coinbaseloader')
+
+
+def some_function():
+    logger.info("Це повідомлення від baseloader")
+    coin_logger.info("Це повідомлення від coinbaseloader")
+
+some_function()
+class CustomFormatter(logging.Formatter):
+    
+    def format(self, record):
+        log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        formatter = logging.Formatter(log_format)
+        return formatter.format(record)
+
+custom_formatter = CustomFormatter()
+
+
+file_handler = logging.FileHandler('baseloader.log')
+file_handler.setFormatter(custom_formatter)
+logger.addHandler(file_handler)
+
+
+coin_file_handler = logging.FileHandler('coinbaseloader.log')
+coin_file_handler.setFormatter(custom_formatter)
+coin_logger.addHandler(coin_file_handler)
