@@ -1,95 +1,33 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Dict
+pip install sqlite3
+pip install pymongo
+import sqlite3
 
-app = FastAPI()
+conn = sqlite3.connect('blog.db')
+c = conn.cursor()
 
+c.execute('''CREATE TABLE IF NOT EXISTS posts
+             (id INTEGER PRIMARY KEY, title TEXT, content TEXT, user_id INTEGER)''')
 
-db = {
-    1: {"id": 1, "title": "Пост 1", "content": "Це перший пост"},
-    2: {"id": 2, "title": "Пост 2", "content": "Це другий пост"}
-}
+c.execute('''CREATE TABLE IF NOT EXISTS comments
+             (id INTEGER PRIMARY KEY, content TEXT, post_id INTEGER, user_id INTEGER)''')
 
+c.execute('''CREATE TABLE IF NOT EXISTS users
+             (id INTEGER PRIMARY KEY, username TEXT, email TEXT)''')
 
-class Post(BaseModel):
-    title: str
-    content: str
+def add_post(title, content, user_id):
+    c.execute("INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)", (title, content, user_id))
+    conn.commit()
 
+def add_comment(content, post_id, user_id):
+    c.execute("INSERT INTO comments (content, post_id, user_id) VALUES (?, ?, ?)", (content, post_id, user_id))
+    conn.commit()
 
-@app.get("/version")
-async def version():
-    return {"version": "1.0"}
+def add_user(username, email):
+    c.execute("INSERT INTO users (username, email) VALUES (?, ?)", (username, email))
+    conn.commit()
 
-@app.get("/posts")
-async def get_posts():
-    return list(db.values())
+add_user("John", "john@example.com")
+add_post("Hello World", "This is my first post", 1)
+add_comment("Great post!", 1, 1)
 
-@app.post("/posts")
-async def create_post(post: Post):
-    new_id = max(db.keys()) + 1
-    db[new_id] = post.dict()
-    return db[new_id]
-
-@app.put("/posts/{post_id}")
-async def update_post(post_id: int, post: Post):
-    if post_id not in db:
-        raise HTTPException(status_code=404, detail="Пост не знайдено")
-    db[post_id] = post.dict()
-    return db[post_id]
-
-@app.delete("/posts/{post_id}")
-async def delete_post(post_id: int):
-    if post_id not in db:
-        raise HTTPException(status_code=404, detail="Пост не знайдено")
-    del db[post_id]
-    return {"message": "Пост видалено успішно"}
-
-@app.get("/stats")
-async def stats():
-    stats_data = {}
-    for route in app.routes:
-        route_path = route.path
-        if route_path != "/stats":
-            stats_data[route_path] = {}
-            for method in route.methods:
-                stats_data[route_path][method] = db.count(route_path, method)
-    return stats_data
-
-
-def test_version_endpoint():
-    response = app.client.get("/version")
-    assert response.status_code == 200
-    assert response.json() == {"version": "1.0"}
-
-def test_get_posts_endpoint():
-    response = app.client.get("/posts")
-    assert response.status_code == 200
-    assert isinstance(response.json(), list)
-
-def test_create_post_endpoint():
-    new_post = {"title": "Новий пост", "content": "Це новий пост"}
-    response = app.client.post("/posts", json=new_post)
-    assert response.status_code == 200
-    assert response.json()["title"] == new_post["title"]
-    assert response.json()["content"] == new_post["content"]
-
-def test_update_post_endpoint():
-    updated_post = {"title": "Оновлений пост", "content": "Це оновлений пост"}
-    response = app.client.put("/posts/1", json=updated_post)
-    assert response.status_code == 200
-    assert response.json()["title"] == updated_post["title"]
-    assert response.json()["content"] == updated_post["content"]
-
-def test_delete_post_endpoint():
-    response = app.client.delete("/posts/2")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Пост видалено успішно"}
-
-def test_stats_endpoint():
-    response = app.client.get("/stats")
-    assert response.status_code == 200
-    assert isinstance(response.json(), dict)
-
-if __name__ == "__main__":
-    import pytest
-    pytest.main()
+conn.close()
