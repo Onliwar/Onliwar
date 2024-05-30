@@ -31,3 +31,14 @@ add_post("Hello World", "This is my first post", 1)
 add_comment("Great post!", 1, 1)
 
 conn.close()
+
+c.execute('''CREATE TABLE IF NOT EXISTS profiles
+             (id INTEGER PRIMARY KEY, user_id INTEGER, full_name TEXT, bio TEXT)''')
+
+def add_user_with_profile(username, email, full_name, bio):
+    c.execute("INSERT INTO users (username, email) VALUES (?, ?)", (username, email))
+    user_id = c.lastrowid
+    c.execute("INSERT INTO profiles (user_id, full_name, bio) VALUES (?, ?, ?)", (user_id, full_name, bio))
+    conn.commit()
+
+add_user_with_profile("John", "john@example.com", "John Doe", "Hello, I'm John!")
