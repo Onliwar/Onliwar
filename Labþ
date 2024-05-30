@@ -1,35 +1,27 @@
-import logging
+import unittest
+from coinbaseloader import CoinBaseLoader
 
+class TestCoinBaseLoader(unittest.TestCase):
+    def setUp(self):
+        self.loader = CoinBaseLoader()
 
-logging.basicConfig(level=logging.INFO)
-
-
-logger = logging.getLogger('baseloader')
-
-
-coin_logger = logging.getLogger('coinbaseloader')
-
-
-def some_function():
-    logger.info("Це повідомлення від baseloader")
-    coin_logger.info("Це повідомлення від coinbaseloader")
-
-some_function()
-class CustomFormatter(logging.Formatter):
+    def test_load_data(self):
+        data = self.loader.load_data('BTC')
+        self.assertIsNotNone(data)
+        self.assertIn('price', data)
+        self.assertIn('volume_24h', data)
     
-    def format(self, record):
-        log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        formatter = logging.Formatter(log_format)
-        return formatter.format(record)
+    def test_error_handling(self):
+        with self.assertRaises(ValueError):
+            self.loader.load_data('INVALID')
+    
+    @unittest.skip("Потрібно активне з'єднання з мережею")
+    @unittest.expectedFailure
+    def test_parameterized_load(self, currency):
+        data = self.loader.load_data(currency)
+        self.assertIsNotNone(data)
+        self.assertIn('price', data)
+        self.assertIn('volume_24h', data)
 
-custom_formatter = CustomFormatter()
-
-
-file_handler = logging.FileHandler('baseloader.log')
-file_handler.setFormatter(custom_formatter)
-logger.addHandler(file_handler)
-
-
-coin_file_handler = logging.FileHandler('coinbaseloader.log')
-coin_file_handler.setFormatter(custom_formatter)
-coin_logger.addHandler(coin_file_handler)
+if __name__ == '__main__':
+    unittest.main()
