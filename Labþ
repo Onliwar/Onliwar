@@ -1,39 +1,40 @@
-import sqlite3
+import numpy as np
 
-conn = sqlite3.connect('blog.db')
-c = conn.cursor()
+arr1 = np.array([1, 2, 3, 4, 5])
 
-c.execute('''CREATE TABLE IF NOT EXISTS posts
-             (id INTEGER PRIMARY KEY, title TEXT, content TEXT, user_id INTEGER)''')
+arr2 = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
-c.execute('''CREATE TABLE IF NOT EXISTS comments
-             (id INTEGER PRIMARY KEY, content TEXT, post_id INTEGER, user_id INTEGER)''')
+zeros_arr = np.zeros((3, 3))
 
-c.execute('''CREATE TABLE IF NOT EXISTS users
-             (id INTEGER PRIMARY KEY, username TEXT, email TEXT)''')
+ones_arr = np.ones((2, 4))
 
-# Додано таблицю для профілів
-c.execute('''CREATE TABLE IF NOT EXISTS profiles
-             (id INTEGER PRIMARY KEY, user_id INTEGER, bio TEXT, picture TEXT)''')
+range_arr = np.arange(0, 10, 2)
 
-def add_post(title, content, user_id):
-    c.execute("INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)", (title, content, user_id))
-    conn.commit()
+random_arr = np.random.random((2, 2))
+import numpy as np
 
-def add_comment(content, post_id, user_id):
-    c.execute("INSERT INTO comments (content, post_id, user_id) VALUES (?, ?, ?)", (content, post_id, user_id))
-    conn.commit()
+arr1 = np.array([1, 2, 3])
+arr2 = np.array([4, 5, 6])
 
-def add_user(username, email, bio=None, picture=None):
-    # Змінено запит для включення інформації про профіль
-    c.execute("INSERT INTO users (username, email) VALUES (?, ?)", (username, email))
-    user_id = c.lastrowid
-    if bio or picture:
-        c.execute("INSERT INTO profiles (user_id, bio, picture) VALUES (?, ?, ?)", (user_id, bio, picture))
-    conn.commit()
+sum_arr = arr1 + arr2
 
-add_user("John", "john@example.com", "Hello, I'm John!", "john.jpg")
-add_post("Hello World", "This is my first post", 1)
-add_comment("Great post!", 1, 1)
+diff_arr = arr1 - arr2
 
-conn.close()
+mul_arr = arr1 * 2
+
+div_arr = arr1 / 2
+
+matmul_arr = np.matmul(arr1, arr2)
+import numpy as np
+
+arr = np.array([1, 2, 3, 4, 5])
+
+arr_sum = np.sum(arr)
+
+arr_max = np.max(arr)
+arr_min = np.min(arr)
+
+arr_mean = np.mean(arr)
+arr_std = np.std(arr)
+
+arr_transpose = np.transpose(arr)
